@@ -1,0 +1,204 @@
+{
+  "info": {
+    "_postman_id": "8f3a1c62-9d54-4b0a-8e77-2c6b1f5a7d90",
+    "name": "api-souk-agricole",
+    "description": "Collection de l'API REST du Souk agricole. La requête de connexion enregistre le jeton dans la variable de collection {{token}} ; aucun jeton reel n'est stocke dans ce fichier.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"agriculteur1@example.com\",\n  \"password\": \"password\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{base_url}}/api/login", "host": ["{{base_url}}"], "path": ["api", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    pm.collectionVariables.set('token', pm.response.json().token);",
+              "    pm.test('Jeton recu', () => pm.expect(pm.response.json().token).to.be.a('string'));",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/api/logout", "host": ["{{base_url}}"], "path": ["api", "logout"] }
+      }
+    },
+    {
+      "name": "Liste des annonces",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/api/annonces", "host": ["{{base_url}}"], "path": ["api", "annonces"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+              "pm.test('Structure JSON', () => pm.expect(pm.response.json()).to.have.property('data'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Annonces filtrees par produit",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/annonces?produit=olives",
+          "host": ["{{base_url}}"],
+          "path": ["api", "annonces"],
+          "query": [{ "key": "produit", "value": "olives" }]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Statut 200', () => pm.response.to.have.status(200));",
+              "pm.test('Toutes les annonces ont le produit olives', () => {",
+              "    pm.response.json().data.forEach((a) => pm.expect(a.produit.slug).to.eql('olives'));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Detail d'une annonce",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/api/annonces/1", "host": ["{{base_url}}"], "path": ["api", "annonces", "1"] }
+      }
+    },
+    {
+      "name": "Creer une annonce",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"produit_id\": 1,\n  \"titre\": \"Olives bio\",\n  \"description\": \"Recolte locale de saison\",\n  \"prix\": 12.5,\n  \"quantite_kg\": 20,\n  \"date_recolte\": \"2026-10-01\",\n  \"disponible\": true,\n  \"regions\": [1, 2]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{base_url}}/api/annonces", "host": ["{{base_url}}"], "path": ["api", "annonces"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Statut 201', () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) { pm.collectionVariables.set('annonce_id', pm.response.json().data.id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Modifier l'annonce creee",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"produit_id\": 1,\n  \"titre\": \"Olives bio (modifiee)\",\n  \"description\": \"Recolte locale de saison\",\n  \"prix\": 13.5,\n  \"quantite_kg\": 25,\n  \"date_recolte\": \"2026-10-01\",\n  \"disponible\": true,\n  \"regions\": [1, 2]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/annonces/{{annonce_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "annonces", "{{annonce_id}}"]
+        }
+      }
+    },
+    {
+      "name": "Supprimer l'annonce creee",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/api/annonces/{{annonce_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["api", "annonces", "{{annonce_id}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": ["pm.test('Statut 204', () => pm.response.to.have.status(204));"]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Liste des produits",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/api/produits", "host": ["{{base_url}}"], "path": ["api", "produits"] }
+      }
+    },
+    {
+      "name": "Detail d'un produit",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": { "raw": "{{base_url}}/api/produits/1", "host": ["{{base_url}}"], "path": ["api", "produits", "1"] }
+      }
+    }
+  ]
+}
