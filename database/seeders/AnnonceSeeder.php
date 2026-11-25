@@ -22,16 +22,19 @@ class AnnonceSeeder extends Seeder
         $produits = Produit::all();
         $regions = Region::all();
 
-        Annonce::factory()
+        $annonces = Annonce::factory()
             ->count(20)
             ->disponible()
             ->make([
-                'user_id' => $users->random()->id,
-                'produit_id' => $produits->random()->id,
-            ])
-            ->each(function (Annonce $annonce) use ($regions) {
-                $annonce->save();
-                $annonce->regions()->attach($regions->random(2));
-            });
+                'user_id' => fn () => $users->random()->id,
+                'produit_id' => fn () => $produits->random()->id,
+            ]);
+
+        foreach ($annonces as $index => $annonce) {
+            $annonce->user()->associate($users[$index % $users->count()]);
+            $annonce->produit()->associate($produits[$index % $produits->count()]);
+            $annonce->save();
+            $annonce->regions()->attach($regions->random(2));
+        }
     }
 }
